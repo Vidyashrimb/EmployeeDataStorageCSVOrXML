@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package protobuf;
+option java_package = "com.employeedata.endpoint.app.protobuf";
+option java_outer_classname = "EmployeeDataProto";
+
+enum eFileType {
+	CSV = 0;
+	XML = 1;
+}
+
+message EmployeeDataMessage {
+	string name = 1;
+	string dob = 2;
+	double salary = 3;
+	uint32 age = 4;
+	eFileType fileType = 5;
+}
+
+message UpdatedEmployeeDataMessage {
+    string updateName = 1;
+	string name = 2;
+	string dob = 3;
+	double salary = 4;
+	uint32 age = 5;
+	eFileType fileType = 6;
+}
