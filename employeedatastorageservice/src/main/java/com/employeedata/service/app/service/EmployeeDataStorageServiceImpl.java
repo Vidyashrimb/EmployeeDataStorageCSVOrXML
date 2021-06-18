@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.Base64;
 import java.util.List;
 
 import javax.xml.bind.JAXBContext;
@@ -13,7 +14,6 @@ import javax.xml.bind.Unmarshaller;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.supercsv.cellprocessor.constraint.NotNull;
 import org.supercsv.cellprocessor.ift.CellProcessor;
@@ -27,6 +27,7 @@ import com.employeedata.service.app.dtos.EmployeeDataOutputDto;
 import com.employeedata.service.app.dtos.EmployeeDataReturnDto;
 import com.employeedata.service.app.dtos.EmployeeDataXmlDto;
 import com.employeedata.service.app.dtos.ResponseDto;
+import com.employeedata.service.app.protobuf.EmployeeDataProto.EmployeeDataMessage;
 
 /**
  * @author Vidyashri
@@ -42,15 +43,13 @@ public class EmployeeDataStorageServiceImpl implements EmployeeDataStorageServic
   private static final String XML_FILE_FOR_EMP_DATA = "./EmployeeData.xml";
 
   @Override
-  public ResponseEntity<Object> getEmployeeData(String empName, String fileType) {
+  public ResponseDto getEmployeeData(String empName, String fileType) {
     logger.trace("Entered inside : getEmployeeData");
     ResponseDto responseDTO = new ResponseDto();
-    ResponseEntity<Object> responseEntity;
     if (empName.isEmpty() || empName.equalsIgnoreCase("")) {
       responseDTO.setStatusCode(HttpStatus.BAD_REQUEST.value());
       responseDTO.setMessage("Invalid Name");
-      responseEntity = new ResponseEntity<>(responseDTO, HttpStatus.BAD_REQUEST);
-      return responseEntity;
+      return responseDTO;
     }
     EmployeeDataReturnDto employeeDataDto;
 
@@ -62,14 +61,19 @@ public class EmployeeDataStorageServiceImpl implements EmployeeDataStorageServic
     if (employeeDataDto == null) {
       responseDTO.setStatusCode(HttpStatus.BAD_REQUEST.value());
       responseDTO.setMessage("Employee Data not found");
-      responseEntity = new ResponseEntity<>(responseDTO, HttpStatus.NO_CONTENT);
-      return responseEntity;
+      return responseDTO;
     }
 
-    responseEntity = new ResponseEntity<>(employeeDataDto, HttpStatus.OK);
+    EmployeeDataMessage employeeDataMessage = EmployeeDataMessage.newBuilder().clear()
+        .setName(employeeDataDto.getName()).setDob(employeeDataDto.getDob())
+        .setSalary(Double.parseDouble(employeeDataDto.getSalary())).setAge(Integer.parseInt(employeeDataDto.getAge()))
+        .build();
+    String payload = Base64.getEncoder().encodeToString(employeeDataMessage.toByteArray());
+    responseDTO.setStatusCode(HttpStatus.OK.value());
+    responseDTO.setMessage(payload);
     logger.info("Successfully fetched the employee data for : {}", empName);
     logger.trace("Entered inside readCsvAndUpdateDataUsingSuperCsv");
-    return responseEntity;
+    return responseDTO;
   }
 
   /**

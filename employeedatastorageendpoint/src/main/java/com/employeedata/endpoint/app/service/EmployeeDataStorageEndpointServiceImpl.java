@@ -13,14 +13,17 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
 import com.employeedata.endpoint.app.constants.EmployeeDataConstants;
 import com.employeedata.endpoint.app.dtos.EmployeeDataInputDto;
+import com.employeedata.endpoint.app.dtos.EmployeeDataOutputDto;
 import com.employeedata.endpoint.app.dtos.ResponseDto;
 import com.employeedata.endpoint.app.kafkautil.KafkaPublisherTemplate;
 import com.employeedata.endpoint.app.protobuf.EmployeeDataProto.EmployeeDataMessage;
@@ -118,14 +121,16 @@ public class EmployeeDataStorageEndpointServiceImpl implements EmployeeDataStora
   }
 
   @Override
-  public ResponseDto getEmployeeData(String empName) {
+  public ResponseEntity<Object> getEmployeeData(String empName) {
     logger.trace("Entered inside : getEmployeeData");
     ResponseDto responseDTO = new ResponseDto();
+    ResponseEntity responseEntity = null;
     try {
       if (empName.isEmpty() || empName.equalsIgnoreCase("")) {
         responseDTO.setStatusCode(HttpStatus.BAD_REQUEST.value());
-        responseDTO.setMessage("Invalid Name");
-        return responseDTO;
+        responseDTO.setMessage("Invalid Name : " + empName);
+        responseEntity = new ResponseEntity<ResponseDto>(responseDTO, HttpStatus.BAD_REQUEST);
+        return responseEntity;
       }
 
       String url = "http://" + employeeDataStorageServiceIp + ":" + employeeDataStorageServicePort
@@ -139,20 +144,48 @@ public class EmployeeDataStorageEndpointServiceImpl implements EmployeeDataStora
       HttpResponse response = client.execute(get);
       if (response.getStatusLine().getStatusCode() != HttpStatus.OK.value()) {
         responseDTO.setStatusCode(response.getStatusLine().getStatusCode());
-        responseDTO.setMessage("Failed to get the Employee Data");
-        return responseDTO;
+        responseDTO.setMessage("Failed to get the Employee Data for " + empName);
+        responseEntity = new ResponseEntity<ResponseDto>(responseDTO, HttpStatus.BAD_REQUEST);
+        return responseEntity;
       }
-      HttpEntity responseEntity = response.getEntity();
-      String content = EntityUtils.toString(responseEntity);
-      responseDTO.setStatusCode(HttpStatus.OK.value());
-      responseDTO.setMessage(content);
+      HttpEntity httpEntity = response.getEntity();
+      String content = EntityUtils.toString(httpEntity);
+      JSONObject contentJson = new JSONObject(content);
+      int statusCode = contentJson.has("statusCode") ? contentJson.getInt("statusCode")
+          : HttpStatus.BAD_REQUEST.value();
+      if (statusCode != HttpStatus.OK.value()) {
+        responseDTO.setStatusCode(response.getStatusLine().getStatusCode());
+        responseDTO.setMessage("Employee Data not available for " + empName);
+        responseEntity = new ResponseEntity<ResponseDto>(responseDTO, HttpStatus.BAD_REQUEST);
+        return responseEntity;
+      }
+      String contentPayload = contentJson.has("message") ? contentJson.getString("message") : null;
+      if (contentPayload == null) {
+        responseDTO.setStatusCode(response.getStatusLine().getStatusCode());
+        responseDTO.setMessage("Employee Data not available for " + empName);
+        responseEntity = new ResponseEntity<ResponseDto>(responseDTO, HttpStatus.BAD_REQUEST);
+        return responseEntity;
+      }
+
+      byte[] payload = Base64.getDecoder().decode(contentPayload);
+      EmployeeDataMessage employeeDataMessage = EmployeeDataMessage.newBuilder().mergeFrom(payload).build();
+      if (employeeDataMessage == null) {
+        responseDTO.setStatusCode(response.getStatusLine().getStatusCode());
+        responseDTO.setMessage("Employee Data not available for " + empName);
+        responseEntity = new ResponseEntity<ResponseDto>(responseDTO, HttpStatus.BAD_REQUEST);
+        return responseEntity;
+      }
+      EmployeeDataOutputDto employeeDataOutputDto = new EmployeeDataOutputDto(employeeDataMessage.getName(),
+          employeeDataMessage.getDob(), employeeDataMessage.getSalary(), employeeDataMessage.getAge());
+
+      responseEntity = new ResponseEntity<EmployeeDataOutputDto>(employeeDataOutputDto, HttpStatus.OK);
     } catch (IOException e) {
       logger.error("Failed to get the Employee Data to exception : {}", e.getMessage());
       responseDTO.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
       responseDTO.setMessage("Failed to get the Employee Data to exception : " + e.getMessage());
     }
     logger.trace("Exit from : getEmployeeData");
-    return responseDTO;
+    return responseEntity;
   }
 
   /**

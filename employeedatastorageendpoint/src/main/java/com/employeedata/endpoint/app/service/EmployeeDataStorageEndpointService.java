@@ -1,6 +1,9 @@
 package com.employeedata.endpoint.app.service;
 
 import com.employeedata.endpoint.app.dtos.ResponseDto;
+
+import org.springframework.http.ResponseEntity;
+
 import com.employeedata.endpoint.app.dtos.EmployeeDataInputDto;
 
 /**
@@ -28,5 +31,5 @@ public interface EmployeeDataStorageEndpointService {
    * @param empName
    * @return
    */
-  ResponseDto getEmployeeData(String empName);
+  ResponseEntity<Object> getEmployeeData(String empName);
 }

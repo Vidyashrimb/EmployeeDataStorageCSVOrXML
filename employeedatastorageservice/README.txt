@@ -40,8 +40,6 @@ Sample URL : http://192.168.43.6:8083/employeservice/getemployeedata/{empName}/{
 
 Sample Response payload : 
 {
-    "name": "XYZ",
-    "dob": "2021-06-18",
-    "salary": "55000.0",
-    "age": "25"
+    "statusCode": 200,
+    "message": "CgNTYW0SCjE5OTUtMDMtMTQZAAAAAABw10AgGQ=="
 }

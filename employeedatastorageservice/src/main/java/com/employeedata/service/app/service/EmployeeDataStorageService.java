@@ -1,6 +1,6 @@
 package com.employeedata.service.app.service;
 
-import org.springframework.http.ResponseEntity;
+import com.employeedata.service.app.dtos.ResponseDto;
 
 /**
  * @author Vidyashri
@@ -14,5 +14,5 @@ public interface EmployeeDataStorageService {
    * @param fileType
    * @return
    */
-  ResponseEntity<Object> getEmployeeData(String empName, String fileType);
+  ResponseDto getEmployeeData(String empName, String fileType);
 }

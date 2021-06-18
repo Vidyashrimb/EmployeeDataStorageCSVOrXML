@@ -50,8 +50,8 @@ public class EmployeeDataStorageEndpointController {
     } else {
       responseEntity = ResponseEntity.status(responseDTO.getStatusCode()).body(responseDTO.toString());
     }
-    logger.info("{} Successfully Saved the employee data for : {} ",
-        EmployeeDataConstants.LOGGER_PREFIX_API_INVOCATION, employeeDataInputDto.getName());
+    logger.info("{} Successfully Saved the employee data for : {} ", EmployeeDataConstants.LOGGER_PREFIX_API_INVOCATION,
+        employeeDataInputDto.getName());
     logger.trace("Exit from :saveNewEmployeeData");
     return responseEntity;
   }
@@ -85,15 +85,10 @@ public class EmployeeDataStorageEndpointController {
    * @return
    */
   @GetMapping(value = "/{empName}", produces = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<String> getEmployeeData(@PathVariable String empName) {
+  public ResponseEntity<Object> getEmployeeData(@PathVariable String empName) {
     logger.trace("Enter inside :updateEmployeeData");
-    ResponseEntity<String> responseEntity = null;
-    responseDTO = employeeDataStorageEndpointService.getEmployeeData(empName);
-    if (responseDTO.getStatusCode() == HttpStatus.OK.value()) {
-      responseEntity = ResponseEntity.status(responseDTO.getStatusCode()).body(responseDTO.getMessage());
-    } else {
-      responseEntity = ResponseEntity.status(responseDTO.getStatusCode()).body(responseDTO.toString());
-    }
+    ResponseEntity<Object> responseEntity = null;
+    responseEntity = employeeDataStorageEndpointService.getEmployeeData(empName);
     logger.info("{} Successfully fetched the employee data for : {} ",
         EmployeeDataConstants.LOGGER_PREFIX_API_INVOCATION, empName);
     logger.trace("Exit from :updateEmployeeData");
